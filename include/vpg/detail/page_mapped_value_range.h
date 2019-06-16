@@ -20,16 +20,30 @@ class page_mapped_value_range {
     assert(start <= max_size);
   }
 
-  void reserve_from_front(size_t n) noexcept {
+  void reserve_from_front(size_t n) {
     auto space_available = std::distance(first_, value_range_.first());
     if (space_available >= n) {
       return;
     }
-    auto delta = n - space_available;
-    (void)delta;
+    auto aligned_first = contiguous_page_range::align_down_to_page_boundary(
+        static_cast<void*>(first_));
+    auto start_new = first_ - n;
+    auto aligned_first_new = contiguous_page_range::align_down_to_page_boundary(
+        static_cast<void*>(start_new));
+    if (aligned_first_new < page_range_.data()) {
+      throw std::bad_alloc{};
+    }
+    page_range_.realize(aligned_first_new,
+                        std::distance(static_cast<char*>(aligned_first_new),
+                                      static_cast<char*>(aligned_first)));
+    auto adjustment = std::distance(static_cast<char*>(aligned_first_new),
+                                    reinterpret_cast<char*>(first_)) %
+                      sizeof(T);
+    first_ = reinterpret_cast<T*>(static_cast<char*>(aligned_first_new) +
+                                  adjustment);
   }
 
-  void reserve_from_back(size_t n) noexcept {
+  void reserve_from_back(size_t n) {
     (void)n;
   }
 

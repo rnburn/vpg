@@ -32,6 +32,12 @@ class contiguous_page_range {
 
   static size_t page_size() noexcept;
 
+  static size_t round_to_page_boundary(size_t n) noexcept;
+
+  static void* align_up_to_page_boundary(void* ptr) noexcept;
+
+  static void* align_down_to_page_boundary(void* ptr) noexcept;
+
  private:
   size_t max_size_;
   void* data_;

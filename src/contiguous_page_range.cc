@@ -7,6 +7,14 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+static uint64_t round_down(uint64_t x, size_t alignment) noexcept {
+  return x & static_cast<uint64_t>(-static_cast<int64_t>(alignment));
+}
+
+static uint64_t round_up(uint64_t x, size_t alignment) noexcept {
+  return round_down(x + alignment - 1, alignment);
+}
+
 namespace vpg {
 namespace detail {
 //--------------------------------------------------------------------------------------------------
@@ -92,6 +100,31 @@ void contiguous_page_range::unrealize(void* address, size_t length) {
 size_t contiguous_page_range::page_size() noexcept {
   static size_t result = ::getpagesize();
   return result;
+}
+
+//--------------------------------------------------------------------------------------------------
+// round_to_page_boundary
+//--------------------------------------------------------------------------------------------------
+size_t contiguous_page_range::round_to_page_boundary(size_t n) noexcept {
+  auto remainder = n % page_size();
+  return n + static_cast<size_t>(remainder > 0) * (page_size() - remainder);
+}
+
+//--------------------------------------------------------------------------------------------------
+// align_up_to_page_boundary
+//--------------------------------------------------------------------------------------------------
+void* contiguous_page_range::align_up_to_page_boundary(void* ptr) noexcept {
+  static_assert(sizeof(ptr) == sizeof(int64_t), "ptr must be 64 bit");
+  return reinterpret_cast<void*>(round_up(reinterpret_cast<uint64_t>(ptr), page_size()));
+}
+
+//--------------------------------------------------------------------------------------------------
+// align_down_to_page_boundary
+//--------------------------------------------------------------------------------------------------
+void* contiguous_page_range::align_down_to_page_boundary(void* ptr) noexcept {
+  static_assert(sizeof(ptr) == sizeof(int64_t), "ptr must be 64 bit");
+  return reinterpret_cast<void*>(
+      round_down(reinterpret_cast<uint64_t>(ptr), page_size()));
 }
 
 //--------------------------------------------------------------------------------------------------
